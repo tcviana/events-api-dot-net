@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddDbContext<DevEventsDbContent>(o => o.UseInMemoryDatabase("DevEventDb"));
+var connectionString = builder.Configuration.GetConnectionString("DevEventsCs");
+
+builder.Services.AddDbContext<DevEventsDbContent>(o => o.UseSqlServer(connectionString));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
