@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using CRUD.API.Entities;
 using CRUD.API.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace CRUD.API.Controllers
 
@@ -27,7 +28,9 @@ namespace CRUD.API.Controllers
         [HttpGet("{id}")]
         public IActionResult GetById(Guid id)
         {
-            var devEvent = _content.DevEvents.SingleOrDefault(d => d.Id == id);
+            var devEvent = _content.DevEvents
+                .Include(de => de.Speakers)
+                .SingleOrDefault(d => d.Id == id);
 
             if (devEvent == null)
             {
@@ -39,6 +42,7 @@ namespace CRUD.API.Controllers
         public IActionResult Post(DevEvent devEvent)
         {
             _content.DevEvents.Add(devEvent);
+            _content.SaveChanges();
             return CreatedAtAction(nameof(GetById), new { id = devEvent.Id }, devEvent);
         }
         [HttpPut("{id}")]
@@ -53,6 +57,8 @@ namespace CRUD.API.Controllers
 
             devEvent.Update(input.Title, input.Description, input.StartDate, input.EndDate);
 
+            _content.DevEvents.Update(devEvent);
+            _content.SaveChanges();
             return NoContent();
         }
 
@@ -68,8 +74,28 @@ namespace CRUD.API.Controllers
 
             devEvent.Delete();
 
-            return NoContent();
+            _content.SaveChanges();
 
+            return NoContent();
+         }
+
+        // api/dev-events/{id}/speakers
+        [HttpPost("{id}/speakers")]
+        public IActionResult PostSpeakers(Guid id, DevEventSpeaker speaker)
+        {
+            speaker.DevEventId = id;
+
+            var devEvent = _content.DevEvents.Any(d => d.Id == id);
+
+            if (!devEvent)
+            {
+                return NotFound();
+            }
+
+            _content.DevEventsSpeaker.Add(speaker);
+            _content.SaveChanges();
+
+            return NoContent();
         }
     }
 }
