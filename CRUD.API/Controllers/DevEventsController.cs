@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using CRUD.API.Entities;
 using CRUD.API.Persistence;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
+using CRUD.API.Models;
 
 namespace CRUD.API.Controllers
 
@@ -13,10 +15,12 @@ namespace CRUD.API.Controllers
     {
 
         private readonly DevEventsDbContent _content;
+        private readonly IMapper _mapper;
 
-        public DevEventsController(DevEventsDbContent content)
+        public DevEventsController(DevEventsDbContent content, IMapper mapper)
         {
             _content = content;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -29,7 +33,9 @@ namespace CRUD.API.Controllers
         {
             var devEvents = _content.DevEvents.Where(d => !d.IsDeleted).ToList();
 
-            return Ok(devEvents);
+            var view = _mapper.Map<List<DevEventViewModel>>(devEvents);
+
+            return Ok(view);
         }
 
         /// <summary>
@@ -50,7 +56,9 @@ namespace CRUD.API.Controllers
             {
                 return NotFound();
             }
-            return Ok(devEvent);
+
+            var view = _mapper.Map<DevEventViewModel>(devEvent);
+            return Ok(view);
         }
 
         /// <summary>
@@ -59,12 +67,13 @@ namespace CRUD.API.Controllers
         /// <remarks>
         /// {"title":"string","description":"string","startDate":"2023-02-27T17:59:14.141Z","endDate":"2023-02-27T17:59:14.141Z"}
         /// </remarks>
-        /// <param name="devEvent">Dados do evento</param>
+        /// <param name="input">Dados do evento</param>
         /// <returns>Evento recém criado</returns>
         /// <response code="201">Sucesso</response>
         [HttpPost]
-        public IActionResult Post(DevEvent devEvent)
+        public IActionResult Post(DevEventInputModel input)
         {
+            var devEvent = _mapper.Map<DevEvent>(input);
             _content.DevEvents.Add(devEvent);
             _content.SaveChanges();
             return CreatedAtAction(nameof(GetById), new { id = devEvent.Id }, devEvent);
@@ -82,7 +91,7 @@ namespace CRUD.API.Controllers
         /// <response code="404">Não encontrado</response>
         /// <response code="204">Sucesso</response>
         [HttpPut("{id}")]
-        public IActionResult Put(Guid id, DevEvent input)
+        public IActionResult Put(Guid id, DevEventViewModel input)
         {
             var devEvent = _content.DevEvents.SingleOrDefault(d => d.Id == id);
 
@@ -134,10 +143,8 @@ namespace CRUD.API.Controllers
         /// <response code="204">Sucesso</response>
         /// <response code="404">Evento não encontrado</response>
         [HttpPost("{id}/speakers")]
-        public IActionResult PostSpeakers(Guid id, DevEventSpeaker speaker)
+        public IActionResult PostSpeakers(Guid id, DevEventSpeakerInputModel input)
         {
-            speaker.DevEventId = id;
-
             var devEvent = _content.DevEvents.Any(d => d.Id == id);
 
             if (!devEvent)
@@ -145,7 +152,10 @@ namespace CRUD.API.Controllers
                 return NotFound();
             }
 
-            _content.DevEventsSpeaker.Add(speaker);
+            var speakers = _mapper.Map<DevEventSpeaker>(input);
+            speakers.DevEventId = id;
+
+            _content.DevEventsSpeaker.Add(speakers);
             _content.SaveChanges();
 
             return NoContent();
