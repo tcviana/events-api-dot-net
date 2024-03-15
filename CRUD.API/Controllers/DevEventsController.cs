@@ -5,6 +5,7 @@ using CRUD.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using CRUD.API.Models;
+using System.Transactions;
 
 namespace CRUD.API.Controllers
 
@@ -166,9 +167,20 @@ namespace CRUD.API.Controllers
             speakers.DevEventId = id;
 
             _content.DevEventsSpeaker.Add(speakers);
-            _content.SaveChanges();
 
-            return NoContent();
+            using (var scope = new TransactionScope())
+            {
+                try 
+                {
+                    _content.SaveChanges();
+                    scope.Complete();
+                    return NoContent();
+                }
+                catch (Exception e)
+                {
+                    return StatusCode(500, e.Message);
+                }
+            }
         }
     }
 }
