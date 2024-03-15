@@ -29,6 +29,7 @@ namespace CRUD.API.Controllers
         /// <returns>Lista de eventos</returns>
         /// <response code="200">Sucesso</response>
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetAll()
         {
             var devEvents = _content.DevEvents.Where(d => !d.IsDeleted).ToList();
@@ -46,6 +47,8 @@ namespace CRUD.API.Controllers
         /// <response code="404">Não encontrado</response>
         /// <response code="200">Sucesso</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetById(Guid id)
         {
             var devEvent = _content.DevEvents
@@ -71,6 +74,7 @@ namespace CRUD.API.Controllers
         /// <returns>Evento recém criado</returns>
         /// <response code="201">Sucesso</response>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         public IActionResult Post(DevEventInputModel input)
         {
             var devEvent = _mapper.Map<DevEvent>(input);
@@ -91,6 +95,8 @@ namespace CRUD.API.Controllers
         /// <response code="404">Não encontrado</response>
         /// <response code="204">Sucesso</response>
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Put(Guid id, DevEventViewModel input)
         {
             var devEvent = _content.DevEvents.SingleOrDefault(d => d.Id == id);
@@ -115,6 +121,8 @@ namespace CRUD.API.Controllers
         /// <response code="404">Não encontrado</response>
         /// <response code="204">Sucesso</response>
         [HttpDelete]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Delete(Guid Id)
         {
             var devEvent = _content.DevEvents.SingleOrDefault(d => d.Id == Id);
@@ -143,6 +151,8 @@ namespace CRUD.API.Controllers
         /// <response code="204">Sucesso</response>
         /// <response code="404">Evento não encontrado</response>
         [HttpPost("{id}/speakers")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult PostSpeakers(Guid id, DevEventSpeakerInputModel input)
         {
             var devEvent = _content.DevEvents.Any(d => d.Id == id);
