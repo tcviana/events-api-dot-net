@@ -33,7 +33,9 @@ namespace CRUD.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetAll()
         {
-            var devEvents = _content.DevEvents.Where(d => !d.IsDeleted).ToList();
+            var devEvents = _content.DevEvents
+                .Include(de => de.Speakers)
+                .Where(d => !d.IsDeleted).ToList();
 
             var view = _mapper.Map<List<DevEventViewModel>>(devEvents);
 
