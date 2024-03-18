@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using CRUD.API.Entities;
 using CRUD.API.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -33,13 +32,27 @@ namespace CRUD.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetAll()
         {
+            // exemplo utilizando Linq
             var devEvents = _content.DevEvents
-                .Include(de => de.Speakers)
-                .Where(d => !d.IsDeleted).ToList();
+                .Where(d => !d.IsDeleted)
+                .Select(de => new DevEventViewModel
+                {
+                    Id = de.Id,
+                    Title = de.Title,
+                    Description = de.Description,
+                    StartDate = de.StartDate,
+                    EndDate = de.EndDate,
+                    Speakers = de.Speakers.Select(s => new DevEventSpeakerViewModel
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        TalkDescription = s.TalkDescription,
+                        TalkTitle = s.TalkTitle,
+                        LinkedInProfile = s.LinkedInProfile
+                    }).ToList()
+                }).ToList();
 
-            var view = _mapper.Map<List<DevEventViewModel>>(devEvents);
-
-            return Ok(view);
+            return Ok(devEvents);
         }
 
         /// <summary>
@@ -54,6 +67,7 @@ namespace CRUD.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetById(Guid id)
         {
+            // Exemplo utilizando autoMapper
             var devEvent = _content.DevEvents
                 .Include(de => de.Speakers)
                 .SingleOrDefault(d => d.Id == id);
