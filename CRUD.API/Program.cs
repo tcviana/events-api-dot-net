@@ -1,12 +1,16 @@
 using CRUD.API.Mapper;
 using CRUD.API.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DevEventsCs");
+var token = builder.Configuration["Enviroments:TokenJWT"];
 
 builder.Services.AddDbContext<DevEventsDbContent>(o => o.UseSqlServer(connectionString));
 
@@ -29,10 +33,30 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
+    c.OperationFilter<AddAuthorizationHeaderParameterOperationFilter>();
+
     var xmlFile = "CRUD.API.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
 });
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    }).AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "localhost",
+            ValidAudience = "test",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token))
+        };
+    });
 
 var app = builder.Build();
 
@@ -45,7 +69,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization(); 
 
 app.MapControllers();
 

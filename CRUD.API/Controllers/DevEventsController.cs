@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using CRUD.API.Models;
 using System.Transactions;
+using CRUD.API.Configuration;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CRUD.API.Controllers
 
@@ -63,6 +65,7 @@ namespace CRUD.API.Controllers
         /// <response code="404">Não encontrado</response>
         /// <response code="200">Sucesso</response>
         [HttpGet("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetById(Guid id)
@@ -197,6 +200,22 @@ namespace CRUD.API.Controllers
                     return StatusCode(500, e.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Realiza o login do caboclo
+        /// </summary>
+        /// <param name="input">Enviar User and Password</param>
+        /// <returns>token</returns>
+        /// <response code="400">Sucesso + token</response>
+        [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult Login(UserInput input)
+        {
+            var user = input.User;
+            var jwtToken = new JwtToken();
+            var token = jwtToken.GenerateJwtToken(user);
+            return StatusCode(200, token);
         }
     }
 }
