@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using CRUD.API.Entities;
 using CRUD.API.Persistence;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
+using CRUD.API.Models;
+using System.Transactions;
 
 namespace CRUD.API.Controllers
 
@@ -13,19 +16,40 @@ namespace CRUD.API.Controllers
     {
 
         private readonly DevEventsDbContent _content;
+        private readonly IMapper _mapper;
 
-        public DevEventsController(DevEventsDbContent content)
+        public DevEventsController(DevEventsDbContent content, IMapper mapper)
         {
             _content = content;
+            _mapper = mapper;
         }
+
+        /// <summary>
+        /// Busca todos os eventos desde que não estejam deletados
+        /// </summary>
+        /// <returns>Lista de eventos</returns>
+        /// <response code="200">Sucesso</response>
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetAll()
         {
             var devEvents = _content.DevEvents.Where(d => !d.IsDeleted).ToList();
 
-            return Ok(devEvents);
+            var view = _mapper.Map<List<DevEventViewModel>>(devEvents);
+
+            return Ok(view);
         }
+
+        /// <summary>
+        /// busca o evento mesmo estando deletado
+        /// </summary>
+        /// <param name="id">Identificador do evento</param>
+        /// <returns>Dados do evento</returns>
+        /// <response code="404">Não encontrado</response>
+        /// <response code="200">Sucesso</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetById(Guid id)
         {
             var devEvent = _content.DevEvents
@@ -36,17 +60,45 @@ namespace CRUD.API.Controllers
             {
                 return NotFound();
             }
-            return Ok(devEvent);
+
+            var view = _mapper.Map<DevEventViewModel>(devEvent);
+            return Ok(view);
         }
+
+        /// <summary>
+        /// Cadastrar um evento
+        /// </summary>
+        /// <remarks>
+        /// {"title":"string","description":"string","startDate":"2023-02-27T17:59:14.141Z","endDate":"2023-02-27T17:59:14.141Z"}
+        /// </remarks>
+        /// <param name="input">Dados do evento</param>
+        /// <returns>Evento recém criado</returns>
+        /// <response code="201">Sucesso</response>
         [HttpPost]
-        public IActionResult Post(DevEvent devEvent)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        public IActionResult Post(DevEventInputModel input)
         {
+            var devEvent = _mapper.Map<DevEvent>(input);
             _content.DevEvents.Add(devEvent);
             _content.SaveChanges();
             return CreatedAtAction(nameof(GetById), new { id = devEvent.Id }, devEvent);
         }
+
+        /// <summary>
+        /// Atualiza um evento
+        /// </summary>
+        /// <remarks>
+        /// {"title":"string","description":"string","startDate":"2023-02-27T17:59:14.141Z","endDate":"2023-02-27T17:59:14.141Z"}
+        /// </remarks>
+        /// <param name="id">Identificador do evento</param>
+        /// <param name="input">Dados a serem atualizados</param>
+        /// <returns>Nada</returns>
+        /// <response code="404">Não encontrado</response>
+        /// <response code="204">Sucesso</response>
         [HttpPut("{id}")]
-        public IActionResult Put(Guid id, DevEvent input)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult Put(Guid id, DevEventViewModel input)
         {
             var devEvent = _content.DevEvents.SingleOrDefault(d => d.Id == id);
 
@@ -62,7 +114,16 @@ namespace CRUD.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Deleta um evento
+        /// </summary>
+        /// <param name="Id">Identificador do evento</param>
+        /// <returns>Nada</returns>
+        /// <response code="404">Não encontrado</response>
+        /// <response code="204">Sucesso</response>
         [HttpDelete]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public IActionResult Delete(Guid Id)
         {
             var devEvent = _content.DevEvents.SingleOrDefault(d => d.Id == Id);
@@ -79,12 +140,22 @@ namespace CRUD.API.Controllers
             return NoContent();
          }
 
-        // api/dev-events/{id}/speakers
+        /// <summary>
+        /// Cadastrar palestrante
+        /// </summary>
+        /// <remarks>
+        /// {"name":"string","talkTitle":"string","talkDescription":"string","linkedInProfile":"string"}
+        /// </remarks>
+        /// <param name="id">Identificador do evento</param>
+        /// <param name="input">Dados do palestrante</param>
+        /// <returns>Nada</returns>
+        /// <response code="204">Sucesso</response>
+        /// <response code="404">Evento não encontrado</response>
         [HttpPost("{id}/speakers")]
-        public IActionResult PostSpeakers(Guid id, DevEventSpeaker speaker)
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public IActionResult PostSpeakers(Guid id, DevEventSpeakerInputModel input)
         {
-            speaker.DevEventId = id;
-
             var devEvent = _content.DevEvents.Any(d => d.Id == id);
 
             if (!devEvent)
@@ -92,10 +163,24 @@ namespace CRUD.API.Controllers
                 return NotFound();
             }
 
-            _content.DevEventsSpeaker.Add(speaker);
-            _content.SaveChanges();
+            var speakers = _mapper.Map<DevEventSpeaker>(input);
+            speakers.DevEventId = id;
 
-            return NoContent();
+            _content.DevEventsSpeaker.Add(speakers);
+
+            using (var scope = new TransactionScope())
+            {
+                try 
+                {
+                    _content.SaveChanges();
+                    scope.Complete();
+                    return NoContent();
+                }
+                catch (Exception e)
+                {
+                    return StatusCode(500, e.Message);
+                }
+            }
         }
     }
 }
