@@ -62,10 +62,10 @@ namespace CRUD.API.Controllers
         /// </summary>
         /// <param name="id">Identificador do evento</param>
         /// <returns>Dados do evento</returns>
+        /// <remarks>Id: a870d561-6f52-4251-457a-08dc4524122e</remarks>
         /// <response code="404">Não encontrado</response>
         /// <response code="200">Sucesso</response>
         [HttpGet("{id}")]
-        [Authorize]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetById(Guid id)
@@ -207,15 +207,30 @@ namespace CRUD.API.Controllers
         /// </summary>
         /// <param name="input">Enviar User and Password</param>
         /// <returns>token</returns>
-        /// <response code="400">Sucesso + token</response>
+        /// <response code="200">Sucesso + token</response>
         [HttpPost("login")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult Login(UserInput input)
+        public IActionResult Login(UserInfo input)
         {
-            var user = input.User;
+            var user = input.Email;
             var jwtToken = new JwtToken();
             var token = jwtToken.GenerateJwtToken(user);
             return StatusCode(200, token);
+        }
+
+        /// <summary>
+        /// Realiza o login do caboclo
+        /// </summary>
+        /// <param name="input">Enviar User and Password</param>
+        /// <returns>token</returns>
+        /// <response code="200">Usuário logado</response>
+        /// <response code="401">Usuário não logado</response>
+        [HttpGet("logged")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult Logged()
+        {
+            return StatusCode(200, "Usuário logado");
         }
     }
 }
