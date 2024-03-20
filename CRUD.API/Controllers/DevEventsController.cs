@@ -18,13 +18,11 @@ namespace CRUD.API.Controllers
 
         private readonly DevEventsDbContent _content;
         private readonly IMapper _mapper;
-        private readonly JwtToken _jwtToken;
 
-        public DevEventsController(DevEventsDbContent content, IMapper mapper, IConfiguration config)
+        public DevEventsController(DevEventsDbContent content, IMapper mapper)
         {
             _content = content;
             _mapper = mapper;
-            _jwtToken = new JwtToken(config);
         }
 
         /// <summary>
@@ -208,14 +206,15 @@ namespace CRUD.API.Controllers
         /// Cria JWT
         /// </summary>
         /// <param name="input">Enviar User and Password</param>
+        /// <param name="jwtToken">Injeçãõ de dependencia</param>
         /// <returns>token</returns>
         /// <response code="200">Sucesso + token</response>
         [HttpPost("login")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult Login(UserInfo input)
+        public IActionResult Login(UserInfo input, [FromServices] JwtToken jwtToken)
         {
             var user = input.Email;
-            var token = _jwtToken.GenerateJwtToken(user);
+            var token = jwtToken.GenerateJwtToken(user);
             return StatusCode(200, token);
         }
 

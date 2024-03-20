@@ -1,3 +1,4 @@
+using CRUD.API.Configuration;
 using CRUD.API.Mapper;
 using CRUD.API.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,6 +18,8 @@ var audience = builder.Configuration["JWT:audience"];
 builder.Services.AddDbContext<DevEventsDbContent>(o => o.UseSqlServer(connectionString));
 
 builder.Services.AddAutoMapper(typeof(DevEventProfile).Assembly);
+
+builder.Services.AddTransient<JwtToken>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
