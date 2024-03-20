@@ -8,9 +8,17 @@
 
     public class JwtToken
     {
-        private readonly string secret = "7e5bf879-0992-41d0-a6f4-e9c7f93ec0dc";
-        private readonly string issuer = "issuer";
-        private readonly string audience = "audience";
+        private readonly string secret;
+        private readonly string issuer;
+        private readonly string audience;
+
+        public JwtToken(IConfiguration config) 
+        {
+            secret = config["JWT:key"];
+            issuer = config.GetValue<string>("JWT:issuer");
+            audience = config.GetValue<string>("JWT:audience");
+
+        }
 
         public string GenerateJwtToken(string userId)
         {

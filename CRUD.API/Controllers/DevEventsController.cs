@@ -18,11 +18,13 @@ namespace CRUD.API.Controllers
 
         private readonly DevEventsDbContent _content;
         private readonly IMapper _mapper;
+        private readonly JwtToken _jwtToken;
 
-        public DevEventsController(DevEventsDbContent content, IMapper mapper)
+        public DevEventsController(DevEventsDbContent content, IMapper mapper, IConfiguration config)
         {
             _content = content;
             _mapper = mapper;
+            _jwtToken = new JwtToken(config);
         }
 
         /// <summary>
@@ -203,7 +205,7 @@ namespace CRUD.API.Controllers
         }
 
         /// <summary>
-        /// Realiza o login do caboclo
+        /// Cria JWT
         /// </summary>
         /// <param name="input">Enviar User and Password</param>
         /// <returns>token</returns>
@@ -213,13 +215,12 @@ namespace CRUD.API.Controllers
         public IActionResult Login(UserInfo input)
         {
             var user = input.Email;
-            var jwtToken = new JwtToken();
-            var token = jwtToken.GenerateJwtToken(user);
+            var token = _jwtToken.GenerateJwtToken(user);
             return StatusCode(200, token);
         }
 
         /// <summary>
-        /// Realiza o login do caboclo
+        /// Valida acesso via JWT
         /// </summary>
         /// <param name="input">Enviar User and Password</param>
         /// <returns>token</returns>

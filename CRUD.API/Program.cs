@@ -1,8 +1,6 @@
 using CRUD.API.Mapper;
-using CRUD.API.Models;
 using CRUD.API.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
