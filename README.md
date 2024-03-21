@@ -13,3 +13,7 @@ Está sendo desenvolvido um projeto de eventos de programação, utilizando ASP.
 ## Funcionalidades
 - Cadastro, Listagem, Detalhes, Atualização, e Remoção de Evento
 - Cadastro de palestrantes
+- Migration
+* Create: dotnet ef migrations add <name> - Persistence/Migrations
+* Rollback: ef migrations remove
+* Execute: dotnet ef database update

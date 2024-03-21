@@ -1,16 +1,25 @@
+using CRUD.API.Configuration;
 using CRUD.API.Mapper;
 using CRUD.API.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DevEventsCs");
+var token = builder.Configuration["JWT:key"];
+var issuer = builder.Configuration["JWT:issuer"];
+var audience = builder.Configuration["JWT:audience"];
 
 builder.Services.AddDbContext<DevEventsDbContent>(o => o.UseSqlServer(connectionString));
 
 builder.Services.AddAutoMapper(typeof(DevEventProfile).Assembly);
+
+builder.Services.AddTransient<JwtToken>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -29,10 +38,27 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 
+    c.OperationFilter<AddAuthorizationHeaderParameterOperationFilter>();
+
     var xmlFile = "CRUD.API.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
 });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(token))
+        };
+    });
 
 var app = builder.Build();
 
@@ -45,7 +71,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseAuthentication();
+app.UseAuthorization(); 
 
 app.MapControllers();
 

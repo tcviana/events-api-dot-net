@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using CRUD.API.Entities;
 using CRUD.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using CRUD.API.Models;
 using System.Transactions;
+using CRUD.API.Configuration;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CRUD.API.Controllers
 
@@ -33,11 +34,27 @@ namespace CRUD.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetAll()
         {
-            var devEvents = _content.DevEvents.Where(d => !d.IsDeleted).ToList();
+            // exemplo utilizando Linq
+            var devEvents = _content.DevEvents
+                .Where(d => !d.IsDeleted)
+                .Select(de => new DevEventViewModel
+                {
+                    Id = de.Id,
+                    Title = de.Title,
+                    Description = de.Description,
+                    StartDate = de.StartDate,
+                    EndDate = de.EndDate,
+                    Speakers = de.Speakers.Select(s => new DevEventSpeakerViewModel
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        TalkDescription = s.TalkDescription,
+                        TalkTitle = s.TalkTitle,
+                        LinkedInProfile = s.LinkedInProfile
+                    }).ToList()
+                }).ToList();
 
-            var view = _mapper.Map<List<DevEventViewModel>>(devEvents);
-
-            return Ok(view);
+            return Ok(devEvents);
         }
 
         /// <summary>
@@ -45,6 +62,7 @@ namespace CRUD.API.Controllers
         /// </summary>
         /// <param name="id">Identificador do evento</param>
         /// <returns>Dados do evento</returns>
+        /// <remarks>Id: a870d561-6f52-4251-457a-08dc4524122e</remarks>
         /// <response code="404">Não encontrado</response>
         /// <response code="200">Sucesso</response>
         [HttpGet("{id}")]
@@ -52,6 +70,7 @@ namespace CRUD.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetById(Guid id)
         {
+            // Exemplo utilizando autoMapper
             var devEvent = _content.DevEvents
                 .Include(de => de.Speakers)
                 .SingleOrDefault(d => d.Id == id);
@@ -181,6 +200,37 @@ namespace CRUD.API.Controllers
                     return StatusCode(500, e.Message);
                 }
             }
+        }
+
+        /// <summary>
+        /// Cria JWT
+        /// </summary>
+        /// <param name="input">Enviar User and Password</param>
+        /// <param name="jwtToken">Injeçãõ de dependencia</param>
+        /// <returns>token</returns>
+        /// <response code="200">Sucesso + token</response>
+        [HttpPost("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult Login(UserInfo input, [FromServices] JwtToken jwtToken)
+        {
+            var user = input.Email;
+            var token = jwtToken.GenerateJwtToken(user);
+            return StatusCode(200, token);
+        }
+
+        /// <summary>
+        /// Valida acesso via JWT
+        /// </summary>
+        /// <param name="input">Enviar User and Password</param>
+        /// <returns>token</returns>
+        /// <response code="200">Usuário logado</response>
+        /// <response code="401">Usuário não logado</response>
+        [HttpGet("logged")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public IActionResult Logged()
+        {
+            return StatusCode(200, "Usuário logado");
         }
     }
 }
